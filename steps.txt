@@ -1,0 +1,506 @@
+1) Single Responsibility 
+2) TypeScript and Webpack
+2) Upgrade to AngularJS 1.5+
+4) Componentify
+5) Modernise
+6) Dual boot with Angular 2+
+7) Migrating Services to Angular Services
+8) Migrating Components to Angular Components
+9) Migrate routing 
+10) Removing AngularJS
+---------------------------------------
+1) Single Responsibility model
+	- https://github.com/johnpapa/angular-styleguide/blob/master/a1/README.md
+	- Split the angularjs controllers and put them into separate files such as person-list.controller.js, person-create.controller.js, person-edit.controller.js and search.controller.js
+	- update the index.html with the new script urls instead of controller.js.
+	- Do the same for factory and filters and directives.
+		- directives/card.directive.js
+		- directives/spinner.directive.js
+		- filters/default-image.filter.js
+	- Run and test
+	
+2) TypeScript and Webpack
+	- Change the extension of all JS to TS
+	- create barrel file. Index.ts file in all folders 
+	- Update the contact service to remove the error
+		use let keyword to declare name variable
+		declare the 'isDeleting' variable in the factory method self object.
+	- Convert the bower dependencies to npm dependencies
+	- copy the package names from bower.json to package.json
+	- run the npm install command. this will show some error, to fix it rename the packages in npm format
+	- update version of angular-auto-validate to 1.19.0
+	- replace angular-ui-router to @uirouter/angularjs: ^1.0.28
+	- install packages for webpack
+		npm i rimraf ts-loader typescript webpack webpack-cli --save-dev
+	- create a tsconfig.json file for ts compiler config, create in the root folders
+			{
+				"compilerOptions": {
+					"baseUrl": "",
+					"emitDecoratorMetadata": true,
+					"experimentalDecorators": true,
+					"declaration": false,
+					"sourceMap": true,
+					"lib":["es6", "dom"],
+					"mapRoot": "./",
+					"module": "es6",
+					"moduleResolution": "node",
+					"outDir": "../dist/out-tsc",
+					"target": "es5",
+					"typeRoots": [
+						"../node_modules/@types"
+					]
+				}
+			}
+	- create webpack.config.js file in root folder 
+		var path = require('path')
+		var webpack = require('webpack');
+
+		module.exports={
+			entry:"./src/app/main.ts",
+			output:{
+				path: path.resolve(__dirname, "src/dist"),
+				filename:"bundle.js"
+			},
+			resolve:{
+				extensions:[".webpack.js", ".web.js", ".ts", ".tsx", ".js"]
+			},
+			module:{
+				rules:[
+					{ test: /\.tsx?$/, loader:"ts-loader"}
+				]
+			},
+			optimization: {
+				minimize: false
+			},
+		}
+	
+	- create the main.ts in the app folder, import all packages and codes to it
+		import 'angular';
+		import 'angular-resource';
+		import 'angular-animate';
+		import '@uirouter/angularjs';
+		import 'angular-ladda';
+		import 'angular-strap';
+		import 'angular-spinner';
+		import 'angularjs-toaster';
+		import 'ng-infinite-scroll';
+		import 'angular-auto-validate/dist/jcs-auto-validate'
+
+		import './app.main';
+		import './services';
+		import './directives';
+		import './filters';
+		import './controllers';
+		import './app.routes';
+	- import the angular package to all controllers, directives, filters and services to avoid the 'angular' not found error. add the following line.
+		import * as angular from 'angular'
+	- Create a script in pakcate.json to build the bundle.js using webpack
+		"build":"rimraf src/dist && webpack --bail --progress --profile"
+		
+		- --bail :Abort the compilation on first error
+		- --progress --profile : Paired with --progress, --profile gives you an in-depth idea of which step in the compilation is taking how long. This can help you optimize your build in a more informed manner.
+	- Open index.html and replace all scripts with 'dist/bundle.js' 
+	- Run and test the app
+- Migrate to Angular JS 1.5+
+	- upgrade the version of angularjs to minimum 1.5 becasuse Component concept was introduced in 1.5
+	- Edit the angular version to 1.8.2. Also need to update the angular-animate, angular-resource packages to same version.reinstall the packages 
+	- run the project and test
+- Componentify	
+	- Create a folder called components
+	- Drag and drop the card directive to it and rename as card.component.ts
+	- declare a cardComponent variable and specify the selector attribute with value same as the directive name 'ccCard'.
+	- define a template property with the value of card.html content as inline template.
+	- declare a bindings property object with same value as scope from directive.
+	- declare the controller attribute with a class CardController. convert the function controller to class type.
+	- create a component with the component object created.
+	- update the scope variables with $ctrl prefix. eg: $ctrl.user.photo, $ctrl.user.city, $ctrl.user.email etc
+	
+		import * as angular from 'angular';
+
+		let cardComponent = {
+			selector:'ccCard',
+			template:`<div class="col-md-6">
+				<div class="well well-sm">
+				  <div class="row">
+					<div class="col-md-4">
+					  <img ng-src="{{ $ctrl.user.photo | defaultImage  }}"
+						   alt=""
+						   class="img-rounded img-responsive" />
+					</div>
+					//remaining code here 
+					`,
+			bindings:{
+				user:'='
+			},
+			controller:class CardController{
+				private isDeleting;
+				private ContactService;
+				private user;
+
+				deleteUser(){
+					this.isDeleting =true;
+					this.ContactService.removeContact(this.user)
+						.then(()=>{ this.isDeleting =false; })
+				}
+			}
+
+		}
+		angular
+		  .module("bytestream")
+		  .component( cardComponent.selector, cardComponent);
+		  
+	- similar way convert controllers and directives into component
+	- UPDATE the form.html with $ctrl variable
+	- remove the controllers and directives folder.
+	- add a barrel index.ts file in components folder.
+	- update the routes file and change the templateurl to template.
+		- specify the value as <person-list></person-list> for list state.
+		- specify the value as <person-create></person-create> for create state.
+		- specify the value as <person-edit></person-edit> for edit state.
+		- specify the value as <search></search> for search state.
+		eg: 
+			.state("list", {
+				url: "/",
+				views: {
+				  main: {
+					template:'<person-list></person-list>'            
+				  },
+				  search: {
+					template: '<search></search>'
+				  }
+				}
+			  })
+- Modernise
+	- upgrade the dependencies of angular js to services that are compatible to run with Angular.
+	- convert the $resource services to $http lower level api because it is easy to migrate
+	- convert the Contact.resource.ts to implement a class instead of typical angualr $resource service.
+	- since the $resource is downgraded to $http lower level service we need to implement the query, save, delete and update methods explicitly.
+	- Convert the factory to a service type 
+	
+		import * as angular from 'angular';
+
+		export class Contact {
+			private apiRoot: string = "http://localhost:3000/profiles";
+			private $http;
+
+			constructor($http) {
+				this.$http = $http;
+			}
+
+			query(params) {
+				return this.$http.get(this.apiRoot, { params });
+			}
+
+			get(id, params?) {
+				return this.$http.get(this.apiRoot + '/' + id, { params });
+			}
+
+			save(data: any) {
+				return this.$http.post(this.apiRoot, data);
+			}
+			update(data:any) {
+				return this.$http.put(this.apiRoot + "/" + data.id, data);
+			}
+
+			remove(data: any) {
+				return this.$http.delete(this.apiRoot + "/" + data.id);
+			}
+		}
+
+		angular
+			.module("bytestream")
+			.service("Contact", Contact)
+			
+	- Modernise the Contact.service.ts also
+	- $q not required because promises are builtin in JS
+	- no need for $rootScope or $scope
+		import * as angular from 'angular';
+		import { Contact } from './contact.resource';
+
+		export class ContactService {
+			private Contact: Contact;
+			private toaster;
+
+			private page = 1;
+			private hasMore = true;
+			private isLoading = false;
+			private isSaving = false;
+			private isDeleting = false;
+			private persons = [];			
+			private search: string = null;
+			private sorting = "name";
+			private ordering = "ASC";
+
+			constructor(Contact, toaster) {
+				this.Contact = Contact;
+				this.toaster = toaster;
+				this.loadContacts();
+			}
+
+			getPerson(email) {
+				console.log(email);
+				for (let person of this.persons) {
+					if (person.email === email) {
+						return person;
+					}
+				}
+			}
+
+			doSearch() {
+				this.hasMore = true;
+				this.page = 1;
+				this.persons = [];
+				this.loadContacts();
+			}
+			doOrder() {
+				this.hasMore = true;
+				this.page = 1;
+				this.persons = [];
+				this.loadContacts();
+			}
+
+			loadContacts() {
+				if (this.hasMore && !this.isLoading) {
+					this.isLoading = true;
+
+					var params = {
+						_page: this.page,
+						_sort: this.sorting,
+						_order: this.ordering,
+						q: this.search
+					};
+
+					this.Contact.query(params)
+						.then((res) => {
+							console.debug(res);
+							for (let person of res.data) {
+								this.persons.push(person)
+							}
+							if (res.data.length === 0) {
+								this.hasMore = false;
+							}
+							this.isLoading = false;
+						});
+				}
+			}
+
+			loadMore() {
+				if (this.hasMore && !this.isLoading) {
+					this.page += 1;
+					this.loadContacts();
+				}
+			}
+
+			updateContact(person) {
+				return new Promise((resolve, reject) => {
+					this.isSaving = true;
+					this.Contact.update(person).then(() => {
+						this.isSaving = false;
+						this.toaster.pop("success", "Updated " + person.name);
+						resolve();
+					});
+				})
+			}
+
+			removeContact(person) {
+				return new Promise((resolve, reject) => {
+					this.isDeleting = true;
+					let name = person.name;
+					this.Contact.remove(person).then(() => {
+						this.isDeleting = false;
+						var index = this.persons.indexOf(person);
+						this.persons.splice(index, 1);
+						this.toaster.pop("success", "Deleted " + name);
+						resolve();
+					});
+				})
+			}
+
+			createContact(person) {
+				return new Promise((resolve, reject) => {
+					this.isSaving = true;
+					this.Contact.save(person).then(() => {
+						this.isSaving = false;
+						this.hasMore = true;
+						this.page = 1;
+						this.persons = [];
+						this.loadContacts();
+						this.toaster.pop("success", "Created " + person.name);
+						resolve();
+					});
+				})
+			}
+		}
+
+		angular
+			.module("bytestream")
+			.service("ContactService", ContactService);
+	
+	- build run and test the application
+	
+- Start Migrate with Dual Booting
+	- Update the package.json with the list of angualr dependencies
+		"@angular/animations": "~10.1.5",
+		"@angular/common": "~10.1.5",
+		"@angular/compiler": "~10.1.5",
+		"@angular/core": "~10.1.5",
+		"@angular/forms": "~10.1.5",
+		"@angular/platform-browser": "~10.1.5",
+		"@angular/platform-browser-dynamic": "~10.1.5",
+		"@angular/router": "~10.1.5",
+		"@angular/upgrade": "^10.1.5",
+		"core-js": "^3.6.5",
+		"ngx-toastr": "^13.1.0",
+		"rxjs": "~6.6.0",				
+		"web-animations-js": "^2.3.2",
+		"zone.js": "~0.10.2",
+		"angular-in-memory-web-api": "^0.11.0"		
+	- Add polyfills for the app, create a polyfills.ts in the app folder 
+		import 'core-js/es/symbol'
+		import 'core-js/es/object'
+		import 'core-js/es/function'
+		import 'core-js/es/number'
+		import 'core-js/es/math'
+		import 'core-js/es/string'
+		import 'core-js/es/date'
+		import 'core-js/es/array'
+		import 'core-js/es/regexp'
+		import 'core-js/es/map'
+		import 'core-js/es/set'
+		import 'core-js/es/reflect'
+		import 'zone.js/dist/zone'
+	- Add the polyfills in the main.ts, add the following line to main.ts
+		import './polyfills'
+	- Your app is still booted by angularjs not with angular, check index.js , ng-app directive in the html
+	- remove that ng-app="bytestream" directive
+	- We will tell the app to start with Angular module and then load angularjs module along with it.
+	- Create a new file in app folder and name it as app.module.ts and add the following code
+		
+		import { NgModule } from '@angular/core';
+		import { BrowserModule } from '@angular/platform-browser';
+		import {UpgradeModule} from '@angular/upgrade/static';
+
+		@NgModule({
+			imports:[
+				BrowserModule,
+				UpgradeModule
+			]
+		})
+		export class AppModule{
+			//override the angular bootstrap so it doesnt do anything
+			ngDoBootstrap(){
+
+			}
+		}
+	
+	- add the following to main.ts file below the polyfills import
+		import { UpgradeModule } from '@angular/upgrade/static';
+		import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+		import { AppModule} from './app.module';
+
+		platformBrowserDynamic().bootstrapModule(AppModule)
+		.then(platformRef=>{
+			console.log("Bootstrapping in Hybrid with Angular and AngularJS");
+			const upgrade = platformRef.injector.get(UpgradeModule) as UpgradeModule;
+			upgrade.bootstrap(document.body,['bytestream'])
+		})
+	- run and test the application, you will see the message in console
+	
+- Migrate the AngularJS services to Angular Services
+	- import the HttpClientModuel to AppModule
+	- add @injectable to class
+	- inject the HttpClient serivce to constructor instead of $http and remove the private variable declared explicitly.
+	- add .ToPromise() to all http operations because the httpClient operations returns observable and we need to convert them as promises.
+	- We also need to downgrade the Angular injectable service to Angular JS service. 
+	- Use the downgradeInjectable function from @angular/upgrade/static package
+		import { HttpClient } from '@angular/common/http';
+		import { Inject } from '@angular/core';
+		import * as angular from 'angular';
+		import {downgradeInjectable} from '@angular/upgrade/static';
+
+		@Injectable({
+			providedIn:'root'
+		})
+		export class Contact {
+			private apiRoot: string = "http://localhost:3000/profiles";
+
+			constructor(@Inject(HttpClient)private http:HttpClient) {
+				
+			}
+
+			query(params):Promise<any[]> {
+				return this.http.get<any[]>(this.apiRoot, { params }).toPromise();
+			}
+
+			get(id, params?:any) {
+				return this.http.get(this.apiRoot + '/' + id, { params }).toPromise();
+			}
+
+			save(data: any) {
+				return this.http.post(this.apiRoot, data).toPromise();
+			}
+			update(data: any) {
+				return this.http.put(this.apiRoot + "/" + data.id, data).toPromise();
+			}
+
+			remove(data: any) {
+				return this.http.delete(this.apiRoot + "/" + data.id).toPromise();
+			}
+		}
+
+		angular
+			.module("bytestream")
+			.service("Contact", downgradeInjectable(Contact));
+	
+	- Now the methods returns the profiles array directly, not with .data property, so we need to update the Contact.service class loadContacts method. Remove the .data from the loop and if condition as follows.
+		for (let person of res) {
+			this.persons.push(person)
+		}
+		if (res.length === 0) {
+			this.hasMore = false;
+		}
+		
+	- Run and test
+	
+	- Upgrade  the Contact.service.ts 
+		- Use @Inject(Contact)private Contact:Contact in constructor
+		- Remove toaster service which is angularJS service and not available for Angular, We need to use an equivalent one in Angular.
+		- Add @Injectable({providedIn:'root' ) on top of service class
+		- and use the downgradeInjectable fucntion to convert the Service as AngularJS service
+			@Injectable({
+				providedIn:'root'
+			})
+			export class ContactService {    
+				//code removed 
+
+				constructor(@Inject(Contact)private contact:Contact) {       
+					this.loadContacts();
+				}
+				//code removed
+			}
+		- Because now the cotnact.service is angular service we can convert the Contact.resource service to pure angular service and can remove the downgrading syntax from the contact.resource.ts file
+		- run and test the application.
+		
+	- Upgrade AngularJS Toaster library to Angular Service
+		- create a file in the app folder with name 'upgraded-providers.ts'
+		- add the following code'
+			import {InjectionToken} from '@angular/core';
+
+			export const Toaster = new InjectionToken('Toaster');
+
+			export function toasterServiceFactory(i:any){
+				return i.get('toaster');
+			}
+
+			export const ToasterServiceProvider = {
+				provide:Toaster,
+				useFactory:toasterServiceFactory,
+				deps:['$injector']
+			}
+			
+		- Register the ToasterServiceProvider in the AppModule providers section
+		- Open Contact.service.ts and inject the toaster in constructor
+			constructor(@Inject(Contact)private contact:Contact, @Inject(Toaster)private toaster) {       
+					this.loadContacts();
+			}
+		- Uncomment the lines where toaster is used and run the application and test
